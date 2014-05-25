@@ -2,7 +2,7 @@
 
 namespace Mcprohosting\Spacegdn;
 
-use Guzzle\Http\Client;
+use GuzzleHttp\Client;
 
 class Bridge implements \ArrayAccess, \Countable, \IteratorAggregate
 {
@@ -247,9 +247,9 @@ class Bridge implements \ArrayAccess, \Countable, \IteratorAggregate
     {
         if (!$this->results) {
 
-            $request = $this->guzzle->createRequest('GET', $this->buildUrl());
-
-            $this->results = $request->send()->json();
+            $response = $this->guzzle->get($this->buildUrl());
+            
+            $this->results = $response->json();
         }
 
         return $this->results;
