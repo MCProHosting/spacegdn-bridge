@@ -273,10 +273,11 @@ class Bridge implements \ArrayAccess, \Countable, \IteratorAggregate
 
     public function offsetSet($offset, $value)
     {
+        $this_array = $this->toArray();
         if (is_null($offset)) {
-            $this->toArray()[] = $value;
+            $this_array[] = $value;
         } else {
-            $this->toArray()[$offset] = $value;
+            $this_array[$offset] = $value;
         }
     }
 
