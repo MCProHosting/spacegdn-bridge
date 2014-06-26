@@ -108,7 +108,7 @@ class Bridge implements \ArrayAccess, \Countable, \IteratorAggregate
      */
     public function jar($id)
     {
-        array_push($this->parameters, 'jar', $id);
+        array_push($this->route, 'jar', $id);
 
         return $this;
     }
@@ -121,7 +121,7 @@ class Bridge implements \ArrayAccess, \Countable, \IteratorAggregate
      */
     public function version($id)
     {
-        array_push($this->parameters, 'version', $id);
+        array_push($this->route, 'version', $id);
 
         return $this;
     }
@@ -134,7 +134,7 @@ class Bridge implements \ArrayAccess, \Countable, \IteratorAggregate
      */
     public function channel($id)
     {
-        array_push($this->parameters, 'channel', $id);
+        array_push($this->route, 'channel', $id);
 
         return $this;
     }
@@ -147,7 +147,7 @@ class Bridge implements \ArrayAccess, \Countable, \IteratorAggregate
      */
     public function build($id)
     {
-        array_push($this->parameters, 'build', $id);
+        array_push($this->route, 'build', $id);
 
         return $this;
     }
