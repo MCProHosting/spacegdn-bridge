@@ -25,7 +25,7 @@ class Bridge implements \ArrayAccess, \Countable, \IteratorAggregate
      *
      * @var array
      */
-    protected $route = array('v1');
+    protected $route;
 
     /**
      * Results of the query.
@@ -64,11 +64,12 @@ class Bridge implements \ArrayAccess, \Countable, \IteratorAggregate
      *
      * @var array
      */
-    protected $parameters = array();
+    protected $parameters;
 
     public function __construct(Client $guzzle = null)
     {
         $this->guzzle = $guzzle ?: new Client;
+        $this->clear();
     }
 
     /**
@@ -96,6 +97,8 @@ class Bridge implements \ArrayAccess, \Countable, \IteratorAggregate
     public function clear()
     {
         $this->parameters = array();
+        $this->route = array('v1');
+        $this->results = null;
 
         return $this;
     }
