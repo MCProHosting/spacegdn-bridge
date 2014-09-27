@@ -14,14 +14,13 @@ $results = $bridge->get('jars');
 // Gets the second page of jars:
 $results = $bridge->get('jars')->page(2);
 
-// Gets all versions owned by jar #2:
-$results = $bridge->jar(2)->get('versions');
+// Gets all versions owned by "foo":
+$results = $bridge->get('versions')->belongingTo('foo');
 
 // Query demonstrating most GDN properties.
 $results = $bridge
-    ->jar(2)
     ->get('builds')
-    ->where('build', '>', 1234)
+    ->where('build', '$gt', 1234)
     ->orderBy('build', 'desc')
     ->page(3);
 

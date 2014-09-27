@@ -4,7 +4,7 @@ namespace Mcprohosting\Spacegdn;
 
 use GuzzleHttp\Client;
 
-class Bridge implements \ArrayAccess, \Countable, \IteratorAggregate
+class Bridge implements \Countable, \IteratorAggregate
 {
     /**
      * Guzzle instance.
@@ -33,31 +33,6 @@ class Bridge implements \ArrayAccess, \Countable, \IteratorAggregate
      * @var \stdClass
      */
     protected $results;
-
-    /**
-     * List of GDN operators.
-     *
-     * @var array
-     */
-    public static $operators = array(
-        '='  => 'eq',
-        '<'  => 'lt',
-        '>'  => 'gt',
-        '<=' => 'lteq',
-        '>=' => 'gteq'
-    );
-
-    /**
-     * List of columns on GDN models.
-     *
-     * @var array
-     */
-    public static $columns = array(
-        'jar'     => array('id', 'name', 'site_url', 'created_at', 'updated_at'),
-        'channel' => array('id', 'jar_id', 'name', 'created_at', 'updated_at'),
-        'version' => array('id', 'channel_id', 'version', 'created_at', 'updated_at'),
-        'build'   => array('id', 'version_id', 'build', 'size', 'checksum', 'url', 'created_at', 'updated_at'),
-    );
 
     /**
      * List of all request parameters to be converted into results.
@@ -96,61 +71,40 @@ class Bridge implements \ArrayAccess, \Countable, \IteratorAggregate
      */
     public function clear()
     {
-        $this->parameters = array();
-        $this->route = array('v1');
+        $this->parameters = [];
+        $this->route = ['v2'];
         $this->results = null;
 
         return $this;
     }
 
     /**
-     * Sets the jar ID to filter by.
+     * Sets the parents of the record we're looking for.
      *
-     * @param string $id
+     * @param string|[]string $ids
      * @return self
      */
-    public function jar($id)
+    public function belongingTo($ids)
     {
-        array_push($this->route, 'jar', $id);
+        if (!is_array($ids)) {
+            return $this->belongingTo([$ids]);
+        }
+
+        foreach ($ids as $id) {
+            $this->route[] = $id;
+        }
 
         return $this;
     }
 
     /**
-     * Sets the version ID to filter by.
+     * Sets that we would like to include the result parents in the query.
      *
-     * @param string $id
      * @return self
      */
-    public function version($id)
+    public function withParents()
     {
-        array_push($this->route, 'version', $id);
-
-        return $this;
-    }
-
-    /**
-     * Sets the channel ID to filter by.
-     *
-     * @param string $id
-     * @return self
-     */
-    public function channel($id)
-    {
-        array_push($this->route, 'channel', $id);
-
-        return $this;
-    }
-
-    /**
-     * Sets the build ID to filter by.
-     *
-     * @param string $id
-     * @return self
-     */
-    public function build($id)
-    {
-        array_push($this->route, 'build', $id);
+        $this->parameters['parents'] = true;
 
         return $this;
     }
@@ -163,9 +117,7 @@ class Bridge implements \ArrayAccess, \Countable, \IteratorAggregate
      */
     public function get($item = '')
     {
-        if ($item) {
-            $this->route[] = rtrim($item, 's');
-        }
+        $this->parameters['r'] = rtrim($item, 's');
 
         return $this;
     }
@@ -180,15 +132,11 @@ class Bridge implements \ArrayAccess, \Countable, \IteratorAggregate
      */
     public function where($column, $operator, $value)
     {
-        $column = $this->resolveColumn($column);
-
-        if ($operator === 'in') {
-            $p = array($column, 'in', implode('.', $value));
-        } else {
-            $p = array($column, self::$operators[$operator], $value);
+        if (is_array($value)) {
+            $value = implode(',', $value);
         }
 
-        $this->parameters['where'] = implode('.', $p);
+        $this->parameters['where'] = implode('.', [$column, $operator, $value]);
 
         return $this;
     }
@@ -215,30 +163,9 @@ class Bridge implements \ArrayAccess, \Countable, \IteratorAggregate
      */
     public function orderBy($column, $direction)
     {
-        $this->parameters['sort'] = $this->resolveColumn($column) . '.' . $direction;
+        $this->parameters['sort'] = $column . '.' . $direction;
 
         return $this;
-    }
-
-    /**
-     * Takes a columns string and identified it with the appropriate model.
-     *
-     * @param string $column
-     * @return string|bool
-     */
-    protected function resolveColumn($column)
-    {
-        if (strpos($column, '.')) {
-            return $column;
-        }
-
-        foreach ($this::$columns as $model => $columns) {
-            if (in_array($column, $columns)) {
-                return $model . '.' . $column;
-            }
-        }
-
-        return false;
     }
 
     /**
@@ -249,9 +176,8 @@ class Bridge implements \ArrayAccess, \Countable, \IteratorAggregate
     public function results()
     {
         if (!$this->results) {
-
             $response = $this->guzzle->get($this->buildUrl());
-            
+
             $this->results = $response->json();
         }
 
@@ -263,40 +189,15 @@ class Bridge implements \ArrayAccess, \Countable, \IteratorAggregate
      *
      * @return string
      */
-    protected function buildUrl()
+    public function buildUrl()
     {
-        $base = $this->endpoint . implode('/', $this->route) . '?';
+        $base = rtrim($this->endpoint . implode('/', $this->route), '/') . '/?';
 
         foreach ($this->parameters as $key => $value) {
             $base .= urlencode($key) . '=' . urlencode($value) . '&';
         }
 
         return $base . 'json';
-    }
-
-    public function offsetSet($offset, $value)
-    {
-        $this_array = $this->toArray();
-        if (is_null($offset)) {
-            $this_array[] = $value;
-        } else {
-            $this_array[$offset] = $value;
-        }
-    }
-
-    public function offsetExists($offset)
-    {
-        return isset($this->toArray()[$offset]);
-    }
-
-    public function offsetUnset($offset)
-    {
-        unset($this->toArray()[$offset]);
-    }
-
-    public function offsetGet($offset)
-    {
-        return isset($this->toArray()[$offset]) ? $this->toArray()[$offset] : null;
     }
 
     public function count()
